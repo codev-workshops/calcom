@@ -1,43 +1,15 @@
-import type { WebhookTriggerEvents, UserPermissionRole } from "@calcom/prisma/enums";
+import type { UserPermissionRole, WebhookTriggerEvents } from "@calcom/prisma/enums";
+import type { WebhookVersion } from "@calcom/types/WebhookVersion";
 
-import type { Webhook, WebhookSubscriber, WebhookGroup } from "../dto/types";
+import type { Webhook, WebhookGroup, WebhookSubscriber } from "../dto/types";
 
-/**
- * Webhook Version enum - defines the payload format versions.
- *
- * This is a TypeScript-only enum (not Prisma).
- * DB operations go through the repository which enforces these values.
- */
-export const WebhookVersion = {
-  V_2021_10_20: "2021-10-20",
-} as const;
+export {
+  DEFAULT_WEBHOOK_VERSION,
+  isValidWebhookVersion,
+  parseWebhookVersion,
+  WebhookVersion,
+} from "@calcom/types/WebhookVersion";
 
-export type WebhookVersion = (typeof WebhookVersion)[keyof typeof WebhookVersion];
-
-/**
- * Default webhook version - used for new webhooks and as fallback
- */
-export const DEFAULT_WEBHOOK_VERSION = WebhookVersion.V_2021_10_20;
-
-const VALID_WEBHOOK_VERSIONS = new Set<string>(Object.values(WebhookVersion));
-
-
-export function isValidWebhookVersion(value: string): value is WebhookVersion {
-  return VALID_WEBHOOK_VERSIONS.has(value);
-}
-
-/**
- * Parse and validate a webhook version string.
- * Throws if the version is invalid.
- */
-export function parseWebhookVersion(value: string): WebhookVersion {
-  if (!isValidWebhookVersion(value)) {
-    throw new Error(
-      `Invalid webhook version: "${value}". Valid versions are: ${Object.values(WebhookVersion).join(", ")}`
-    );
-  }
-  return value;
-}
 export interface GetSubscribersOptions {
   userId?: number | null;
   eventTypeId?: number | null;
@@ -84,4 +56,3 @@ export interface IWebhookRepository {
   }>;
   listWebhooks(options: ListWebhooksOptions): Promise<Webhook[]>;
 }
-
