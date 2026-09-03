@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json.schemastore.org/tsconfig",
+  "extends": "./packages/tsconfig/base.json",
+  "compilerOptions": {
+    "baseUrl": "apps/web",
+    "paths": {
+      "~/*": ["modules/*"],
+      "@components/*": ["components/*"],
+      "@pages/*": ["pages/*"],
+      "@lib/*": ["lib/*"],
+      "@server/*": ["server/*"],
+      "@prisma/client/*": ["../../packages/prisma/client/*"],
+      "@calcom/repository/*": ["../../packages/lib/server/repository/*"],
+      "@coss/ui/*": ["../../packages/coss-ui/src/*"]
+    }
+  },
+  "files": []
+}
