@@ -9,11 +9,18 @@ This repository is a **Turborepo + Yarn v4 workspaces** monorepo (`packageManage
 Two independent measurements were taken:
 
 1. **Declared dependencies** — the `dependencies` / `peerDependencies` / `devDependencies` blocks of every non-`node_modules` `package.json` under `packages/` and `apps/web` (138 manifests), including nested manifests: `packages/features/package.json`, `packages/features/auth/package.json` (`@calcom/feature-auth`), `packages/features/ee/package.json` (`@calcom/ee`), `packages/features/ee/billing/package.json`, `packages/platform/libraries/package.json`, `packages/app-store/stripepayment/package.json`, and `apps/web/package.json`.
-2. **Actual code imports** — every `from "@calcom/…"` / `import("@calcom/…")` / `require("@calcom/…")` specifier in 3,662 source files (`.ts`, `.tsx`, `.js`, `.jsx`, `.mjs`, `.cjs`) under `packages/` and `apps/web`. Each specifier was resolved to the longest matching workspace package name, then attributed to its owning top-level directory group (`packages/features/**` → `features`, `packages/app-store/**` → `app-store`, `packages/platform/atoms` → `platform/atoms`, …). Test files (`*.test.*`, `*.spec.*`, `*.integration-test.*`, `__tests__`, `__mocks__`) were counted separately so that test-only edges never masquerade as production edges.
+2. **Actual code imports** — every `from "@calcom/…"` / `import("@calcom/…")` / `require("@calcom/…")` specifier in the tracked source files (`.ts`, `.tsx`, `.js`, `.jsx`, `.mjs`, `.cjs`) under `packages/` and `apps/web`. There are 5,608 such files; 3,662 of them contain at least one `@calcom/` specifier and are therefore the only ones that can contribute an edge. Each specifier was resolved to the longest matching workspace package name, then attributed to its owning top-level directory group (`packages/features/**` → `features`, `packages/app-store/**` → `app-store`, `packages/platform/atoms` → `platform/atoms`, …). Test files (`*.test.*`, `*.spec.*`, `*.integration-test.*`, `*.e2e.*`, `__tests__`, `__mocks__`) were counted separately so that test-only edges never masquerade as production edges.
+
+**Reading the counts.** Because edges are aggregated per *directory group*, a group count can exceed a plain grep for one specifier prefix: workspace packages that live inside another group's directory are attributed to that group. The two cases that matter are `@calcom/ee` and `@calcom/billing` (in `packages/features/ee/**` → `features`) and `@calcom/routing-forms` (in `packages/app-store/routing-forms` → `app-store`). Both headline edges are broken down below, so a single-prefix grep and the group total can be reconciled:
+
+| group edge | group total | via the group's main prefix | via sibling packages in the same directory |
+|---|---|---|---|
+| `features → app-store` | 103 | 100 (`@calcom/app-store/*`) | 3 (`@calcom/routing-forms/*`) |
+| `trpc → features` | 275 | 271 (`@calcom/features/*`) | 4 (`@calcom/ee/*` only) |
 
 **The declared graph materially understates the real graph.** Two of the highest-traffic packages declare *zero* `@calcom/*` dependencies:
 
-- `packages/trpc/package.json` (`@calcom/trpc`) declares only `@trpc/*`, `cookie`, `superjson`, `uuid`, `zod` — yet its source imports 10 other workspace groups across 275 non-test files.
+- `packages/trpc/package.json` (`@calcom/trpc`) declares only `@trpc/*`, `cookie`, `superjson`, `uuid`, `zod` — yet its source imports 10 other workspace groups, reaching into the `features` group alone from 275 non-test files.
 - `packages/prisma/package.json` (`@calcom/prisma`) declares only `@prisma/*`, `prisma`, `zod`-family packages — yet `packages/prisma/zod-utils.ts` imports `@calcom/lib/zod/eventType`.
 
 Likewise `packages/features` never declares `@calcom/app-store`, and `packages/ui` never declares `@calcom/features`, although both edges exist in code. Any conclusion drawn only from `package.json` would miss the repository's two most important cycles.
@@ -57,7 +64,7 @@ Two structural observations from the matrix:
 
 | direction | non-test files | import statements | declared? |
 |---|---|---|---|
-| `features → app-store` | **103** | 227 | **No** — `packages/features/package.json` does not list `@calcom/app-store` |
+| `features → app-store` | **103** (100 via `@calcom/app-store/*` + 3 via `@calcom/routing-forms/*`) | 227 | **No** — `packages/features/package.json` does not list `@calcom/app-store` |
 | `app-store → features` | 58 | 101 | Yes — `@calcom/features: workspace:*` in `packages/app-store/package.json` |
 
 `features → app-store` hotspot specifiers: `@calcom/app-store/locations` (28 imports), `/zod-utils` (24), `/delegationCredential` (17), `/utils` (13), `/routing-forms/lib/formSubmissionUtils` (13), `/routing-forms/types/types` (12), `/_utils/getCalendar` (7), `/constants` (4).
@@ -82,7 +89,7 @@ Note that `packages/app-store/stripepayment/package.json` closes the same loop a
 | direction | non-test files | import statements | declared? |
 |---|---|---|---|
 | `features → trpc` | 62 | 92 | Yes (`@calcom/trpc: workspace:*`) |
-| `trpc → features` | **275** | 671 | No — `@calcom/trpc` declares zero `@calcom/*` dependencies |
+| `trpc → features` | **275** (271 via `@calcom/features/*` + 4 via `@calcom/ee/*`) | 671 | No — `@calcom/trpc` declares zero `@calcom/*` dependencies |
 
 `features → trpc` is dominated by the client surface: `@calcom/trpc/react` (45 imports), `@calcom/trpc/react/hooks/useMeQuery` (3), `@calcom/trpc/server/types` (6) — plus a handful of server reach-ins such as `@calcom/trpc/server/routers/viewer/teams/inviteMember/utils` (11) and `@calcom/trpc/server/routers/viewer/slots/util` (5).
 
@@ -200,7 +207,7 @@ Result: `ui` becomes a strict downstream leaf of `features`, and one of three cy
 
 ### R2. Extract shared app primitives into a lower leaf package
 
-23 of the 100 `features` files that import `app-store` import *only* `@calcom/app-store/locations`, `/constants`, `/utils` or `/zod-utils`. Extracting those four modules into a new leaf package (e.g. `@calcom/app-config` or `packages/app-store-primitives`) that depends on nothing but `types`/`lib` immediately removes ~23 files from the cycle and downgrades the remaining edges, because `features` and `app-store` would both depend *downward* on the new package:
+23 of the 100 `features` files that import `@calcom/app-store/*` import *only* `@calcom/app-store/locations`, `/constants`, `/utils` or `/zod-utils`. Extracting those four modules into a new leaf package (e.g. `@calcom/app-config` or `packages/app-store-primitives`) that depends on nothing but `types`/`lib` immediately removes ~23 files from the cycle and downgrades the remaining edges, because `features` and `app-store` would both depend *downward* on the new package:
 
 - `@calcom/app-store/locations` — 21 files in `features` (28 imports), also imported by `trpc` and `emails`
 - `@calcom/app-store/utils` — 11 files in `features`, 11 imports in `trpc`
@@ -230,12 +237,14 @@ Independently, `packages/trpc/package.json` should declare its real `@calcom/*` 
 
 ### Breaking-change impact
 
-Internal refactors here are **import-path churn, not semver-breaking changes**. Every internal package is `"private": true` with `"version": "0.0.0"` or `"1.0.0"` and is consumed exclusively through `workspace:*` (`@calcom/features`, `@calcom/lib`, `@calcom/ui`, `@calcom/app-store`, `@calcom/trpc`, `@calcom/prisma`, `@calcom/types`, `@calcom/dayjs`, `@calcom/emails`, `@calcom/config`, `@calcom/tsconfig`, `@calcom/kysely`, `@coss/ui`, …), so moving a module only requires updating in-repo importers.
+Internal refactors here are **import-path churn, not semver-breaking changes**. Every internal package except `@calcom/billing` (see below) is `"private": true` with `"version": "0.0.0"` or `"1.0.0"` and is consumed exclusively through `workspace:*` (`@calcom/features`, `@calcom/lib`, `@calcom/ui`, `@calcom/app-store`, `@calcom/trpc`, `@calcom/prisma`, `@calcom/types`, `@calcom/dayjs`, `@calcom/emails`, `@calcom/config`, `@calcom/tsconfig`, `@calcom/kysely`, `@coss/ui`, …), so moving a module only requires updating in-repo importers.
 
 The externally visible surface — where changes *are* breaking — is:
 
 - `@calcom/atoms` (`packages/platform/atoms`, publishable, `2.2.0`)
 - `@calcom/embed-core` (`1.5.3`), `@calcom/embed-react` (`1.5.3`), `@calcom/embed-snippet` (`1.3.3`)
 - `@calcom/platform-libraries` (`packages/platform/libraries/package.json`, not marked private) — its `index.ts` re-export list is the contract consumed by API v2, so R1–R4 must keep those named exports stable even while their implementation moves.
+
+One more manifest is missing `private: true` without being a real external surface: `@calcom/billing` (`packages/features/ee/billing/package.json`, `version: "1.0.0"`). It has no `publishConfig`, is not on the public npm registry, and no workspace declares or imports it, so it carries no external consumers today — but the missing `private` flag makes it publishable by accident and should be added.
 
 Recommended sequencing: **R1 → R2 → R5 (declare edges + CI boundary check) → R3 → R4**, keeping the `platform/libraries` re-export surface fixed throughout.
