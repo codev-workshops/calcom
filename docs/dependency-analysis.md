@@ -188,7 +188,7 @@ Undeclared workspace dependencies are widespread. Imports that resolve only beca
 - `platform-types` imports `@calcom/platform-enums` (8 files, value imports).
 - `platform-enums/permissions.ts` imported `type PLATFORM_PERMISSION` back from `@calcom/platform-types`. `platform-enums/package.json` doesn't declare that dependency (it only declares `platform-constants`).
 - That file was an exact duplicate of `packages/platform/utils/permissions.ts`. Nothing exported it (it isn't in `index.ts` or `monorepo.ts`) and nothing imported it. It has been deleted; `@calcom/platform-utils` keeps the live copy.
-- Result: `platform-enums` depends only on `platform-constants`, the SCC is gone, and the package's dependencies match its `package.json`. Nothing imported the file, so there's no runtime change.
+- Result: `platform-enums` no longer imports any workspace package and the SCC is gone. Nothing imported the file, so there's no runtime change. Its declared `@calcom/platform-constants` dependency is now unused and can be dropped in a follow-up (that also touches `yarn.lock`).
 
 ## 7. Prioritised refactoring recommendations
 
