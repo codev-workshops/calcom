@@ -153,13 +153,13 @@ Ce = distinct workspace packages imported, Ca = distinct packages importing it, 
 | platform-types | 121 | 2 | 5 | 0.29 | 24 (20%) |
 | platform-utils | 3 | 2 | 2 | 0.50 | 1 (33%) |
 | app-store-cli | 21 | 1 | 0 | 1.00 | 2 (10%) |
-| platform-enums | 13 | 1 | 2 | 0.33 | 1 (8%) |
 | prisma | 20 | 1 | 14 | 0.07 | 1 (5%) |
 | config | 4 | 0 | 7 | 0.00 | 0 (0%) |
 | dayjs | 3 | 0 | 11 | 0.00 | 0 (0%) |
 | embed-core | 34 | 0 | 7 | 0.00 | 0 (0%) |
 | kysely | 2 | 0 | 3 | 0.00 | 0 (0%) |
-| platform-constants | 4 | 0 | 7 | 0.00 | 0 (0%) |
+| platform-constants | 4 | 0 | 6 | 0.00 | 0 (0%) |
+| platform-enums | 12 | 0 | 2 | 0.00 | 0 (0%) |
 
 Excessive fan-out:
 
@@ -187,9 +187,8 @@ Undeclared workspace dependencies are widespread. Imports that resolve only beca
 
 - `platform-types` imports `@calcom/platform-enums` (8 files, value imports).
 - `platform-enums/permissions.ts` imported `type PLATFORM_PERMISSION` back from `@calcom/platform-types`. `platform-enums/package.json` doesn't declare that dependency (it only declares `platform-constants`).
-- `PLATFORM_PERMISSION` is just `(typeof PERMISSIONS)[number]` from `@calcom/platform-constants`, which `permissions.ts` already imports. The file now derives the type locally from that source.
-- Result: `platform-enums` depends only on `platform-constants`, the SCC is gone, and the package's dependencies match its `package.json`. The change is type-only, so there's no runtime change.
-- Follow-up: `packages/platform/enums/permissions.ts` is byte-for-byte the same as `packages/platform/utils/permissions.ts` (apart from the import). It is not exported from `index.ts`/`monorepo.ts`, and nothing imports it. Deleting it is a safe next step; it's left out of this PR because deleting files needs approval.
+- That file was an exact duplicate of `packages/platform/utils/permissions.ts`. Nothing exported it (it isn't in `index.ts` or `monorepo.ts`) and nothing imported it. It has been deleted; `@calcom/platform-utils` keeps the live copy.
+- Result: `platform-enums` depends only on `platform-constants`, the SCC is gone, and the package's dependencies match its `package.json`. Nothing imported the file, so there's no runtime change.
 
 ## 7. Prioritised refactoring recommendations
 
