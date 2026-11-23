@@ -91,7 +91,7 @@ Rows are importers and columns are imported packages. The number is the count of
 
 | Edge | Prod files | Test files |
 |---|---|---|
-| web → features (`@calcom/features/ee/*` → ee) | 142 | 13 |
+| web → ee (via `@calcom/features/ee/*`) | 142 | 13 |
 | web → feature-auth | 120 | 6 |
 | trpc → prisma | 279 | 37 |
 | trpc → features | 223 | 28 |
@@ -143,8 +143,8 @@ This produces a tight loop: `EventManager` (features) calls app-store calendar/v
 
 | Cycle | Example back-edge file |
 |---|---|
-| `features` ↔ `ee` (50 / 56 prod) | `packages/features/bookings/lib/BookingEmailSmsHandler.ts` → `@calcom/features/ee/*` |
-| `trpc` ↔ `ee` (83 / 11 prod) | ee → trpc in `packages/features/ee/**` routers |
+| `features` ↔ `ee` (50 / 56 prod) | `packages/features/bookings/lib/BookingEmailSmsHandler.ts` → ee; `packages/features/ee/dsync/lib/assignValueToUser.ts` → features |
+| `trpc` ↔ `ee` (83 / 11 prod) | `packages/features/ee/dsync/lib/handleUserEvents.ts`, `packages/features/ee/deployment/licensekey/CreateLicenseKeyForm.tsx` → `@calcom/trpc` |
 | `lib` ↔ `web`, `lib` ↔ `atoms` | `packages/lib/hooks/useLocale.ts` imports `@calcom/web/app/AppRouterI18nProvider`, `@calcom/web/app/CustomI18nProvider`, `@calcom/atoms/hooks/useAtomsContext` |
 | `lib` ↔ `ee` | `packages/lib/domainManager/organization.ts`, `packages/lib/formatCalendarEvent.ts` |
 | `lib` ↔ `prisma` | `packages/prisma/zod-utils.ts` imports `@calcom/lib` |
@@ -198,7 +198,7 @@ graph LR
 |---|---|---|---|---|
 | 1 | features ↔ app-store | 80 / 45 | Booking creation, payments, calendar/video sync, routing forms | Shared contracts (app metadata, `Calendar`/`VideoApiAdapter`/payment service interfaces) in `@calcom/types` or a new `@calcom/app-store-types` leaf |
 | 2 | features ↔ trpc | 49 / 223 | All viewer routers, Booker UI hooks, slot computation, DI container | Move `AvailableSlotsService` into features; move client hooks/types into a `@calcom/trpc-client` leaf; move `flags/server/router.ts` into trpc |
-| 3 | features ↔ atoms | 7 / 41 | Platform SDK (atoms) and web Booker | Atoms depend on features only. Move `useAtomsContext`-style hooks that features needs into a small leaf |
+| 3 | features ↔ atoms | 7 / 41 | Platform SDK (atoms) and web Booker | Keep atoms → features one-way. Move `useIsPlatform`, `useHandleBookEvent` and the `availability/types` that features imports from atoms into features or a small leaf |
 | 4 | lib ↔ {web, atoms, ee, prisma} | 1–2 back-edges each | Every package (lib has the highest fan-in) | Move `useLocale` out of lib; split lib into server/shared (P3) |
 | 5 | features ↔ ee, trpc ↔ ee | 50 / 56, 83 / 11 | Org/team, billing, workflows | Treat `features/ee` as part of features (merge manifests) or give it a one-way interface |
 | 6 | ui ↔ features / ee / prisma | 2–3 files | Presentational layer pulls in server code | P4 |
