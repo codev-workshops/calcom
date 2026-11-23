@@ -14,7 +14,8 @@ Resolution rules:
 - A file belongs to the nearest ancestor directory that has a `package.json` with a `name`.
 - An import specifier is resolved to a physical path first, then to the package that owns that path. So `@calcom/features/auth/...` resolves to `@calcom/feature-auth` (`packages/features/auth`), and `@calcom/features/ee/...` resolves to `@calcom/ee` (`packages/features/ee`), even though both are reached through the `@calcom/features` alias.
 - The ~100 app sub-packages under `packages/app-store/*` (for example `dailyvideo`, `zoomvideo`, `routing-forms`) are folded into `@calcom/app-store`. They are only broken out in the manifest-level fan-in count in §5.
-- Files matching `.test.`, `.spec.`, `.e2e.`, `/test/`, `/tests/`, `__tests__`, `__mocks__` are counted as **test** imports. "Prod" counts exclude them.
+- Comments and template-literal contents are stripped before matching. This prevents generated code snippets, such as the `@calcom/embed-react` sample in `packages/features/embed/lib/EmbedCodes.tsx`, from being counted as imports.
+- Files matching `test-setup`, `.test.`, `.spec.`, `.e2e.`, `/test/`, `/tests/`, `__tests__`, `__mocks__` are counted as **test** imports. "Prod" counts exclude them.
 - Counts are **number of distinct files** that import the target package, not number of import statements.
 
 A discrepancy is any edge that appears in (a) but not (b), or in (b) but not (a).
@@ -54,13 +55,13 @@ Rows are importers and columns are imported packages. The number is the count of
 
 | importer ↓ / imported → | web | app-store | features | feature-auth | ee | trpc | ui | lib | prisma | emails | dayjs | types | config | atoms | platform-libraries | platform-types | platform-utils | platform-constants | platform-enums | embed-core | embed-react | embed-snippet | coss-ui |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| **web** | — | ● 94 | ● 466 | ◆ 126 | ◆ 155 | ● 381 | ● 574 | ● 767 | ● 322 | ◆ 8 | ● 89 | ● 74 | ● 1 | ◆ 36 |  | ● 11 |  | ◆ 12 | ○ | ● 20 | ○ | ○ | ○ |
+| **web** | — | ● 94 | ● 465 | ◆ 124 | ◆ 154 | ● 381 | ● 574 | ● 767 | ● 322 | ◆ 8 | ● 89 | ● 74 | ● 1 | ◆ 36 |  | ● 11 |  | ◆ 12 | ○ | ● 20 | ○ | ○ | ○ |
 | **app-store** | ◇ 7 | — | ● 50 | ◆ 10 | ◆ 14 |  | ● 53 | ● 247 | ◆ 164 | ◆ 5 | ● 12 | ● 163 |  | ◆ 2 |  |  |  |  |  |  |  |  |  |
-| **features** | ◆ 35 | ◆ 106 | — | ◆ 6 | ◆ 61 | ● 55 | ● 44 | ● 302 | ◆ 411 | ◆ 20 | ● 104 | ◆ 95 |  | ● 7 |  | ◆ 2 |  |  |  | ◆ 6 | ◆ 1 |  |  |
+| **features** | ◆ 34 | ◆ 106 | — | ◆ 6 | ◆ 61 | ● 55 | ● 44 | ● 302 | ◆ 411 | ◆ 20 | ● 104 | ◆ 95 |  | ● 6 |  | ◆ 2 |  |  |  | ◆ 6 |  |  |  |
 | **feature-auth** | ◆ 2 | ◆ 3 | ◆ 13 | — | ◆ 6 | ● 2 | ● 2 | ● 24 | ● 26 | ◆ 2 | ● 4 | ◆ 2 | ◆ 2 |  |  |  |  |  |  |  |  |  |  |
-| **ee** | ◆ 7 | ◆ 25 | ◆ 65 | ◆ 10 | — | ◆ 17 | ● 6 | ● 91 | ◆ 136 | ◆ 18 | ◆ 25 | ◆ 15 |  |  |  |  |  |  |  |  |  |  |  |
-| **trpc** |  | ◆ 51 | ◆ 251 | ◆ 20 | ◆ 92 | — | ◆ 1 | ◆ 155 | ◆ 316 | ◆ 15 | ◆ 14 | ◆ 11 | ◆ 1 |  |  |  |  |  |  |  |  |  |  |
-| **ui** |  |  | ◆ 2 |  | ◆ 3 |  | — | ● 43 | ◆ 3 |  | ◆ 1 | ◆ 4 | ○ | ◆ 1 |  |  |  |  |  | ◆ 1 |  |  |  |
+| **ee** | ◆ 7 | ◆ 25 | ◆ 64 | ◆ 10 | — | ◆ 17 | ● 6 | ● 91 | ◆ 136 | ◆ 18 | ◆ 25 | ◆ 15 |  |  |  |  |  |  |  |  |  |  |  |
+| **trpc** |  | ◆ 51 | ◆ 251 | ◆ 20 | ◆ 92 | — | ◆ 1 | ◆ 154 | ◆ 316 | ◆ 15 | ◆ 13 | ◆ 11 | ◆ 1 |  |  |  |  |  |  |  |  |  |  |
+| **ui** |  |  | ◆ 2 |  | ◆ 3 |  | — | ● 43 | ◆ 3 |  | ◆ 1 | ◆ 4 | ○ | ◇ 1 |  |  |  |  |  | ◆ 1 |  |  |  |
 | **lib** | ◆ 1 | ◇ 1 | ◇ 2 |  | ◆ 2 |  |  | — | ◆ 49 | ◆ 2 | ● 23 | ● 24 | ● 2 | ◆ 1 |  |  |  |  |  | ◆ 4 |  |  |  |
 | **prisma** |  |  |  |  |  |  |  | ◆ 1 | — |  |  |  |  |  |  |  |  |  |  |  |  |  |  |
 | **emails** | ◇ 2 | ◆ 3 | ◆ 4 |  |  |  |  | ● 88 | ◆ 11 | — | ● 5 | ● 38 |  |  |  |  |  |  |  |  |  |  |  |
@@ -78,6 +79,8 @@ Rows are importers and columns are imported packages. The number is the count of
 | **embed-snippet** |  |  |  |  |  |  |  |  |  |  |  | ◆ 1 |  |  |  |  |  |  |  | ● 1 |  | — |  |
 | **coss-ui** |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | — |
 
+The matrix covers only the 23 requested packages. Other workspace packages are left out of the rows and columns but are included in the fan-in totals in §6: `@calcom/billing` (`packages/features/ee/billing`), `@calcom/kysely`, `@calcom/platform-examples-base` and the app-store sub-packages that are not folded in. As a result, a column total in the matrix can be lower than the §6 figure. For example, `billing → lib` adds 16 files (13 prod, 3 test) to `lib`'s fan-in.
+
 ### 3.1 Declared vs. import discrepancies
 
 **Declared but not imported (○)**
@@ -91,14 +94,15 @@ Rows are importers and columns are imported packages. The number is the count of
 
 | Edge | Prod files | Test files |
 |---|---|---|
-| web → ee (via `@calcom/features/ee/*`) | 142 | 13 |
-| web → feature-auth | 120 | 6 |
+| web → ee (via `@calcom/features/ee/*`) | 140 | 14 |
+| web → feature-auth | 118 | 6 |
 | trpc → prisma | 279 | 37 |
 | trpc → features | 223 | 28 |
-| trpc → lib | 139 | 16 |
+| trpc → lib | 138 | 16 |
 | features → prisma | 298 | 113 |
 | features → app-store | 80 | 26 |
-| app-store → prisma | 152 | 12 |
+| app-store core (`packages/app-store/*.ts`, `_utils`, `_components`, …) → prisma | 33 | 4 |
+| 17 app-store sub-packages without their own prisma declaration (e.g. `alby`, `basecamp3`, `jitsivideo`) → prisma | 53 | 3 |
 | ee → prisma | 111 | 25 |
 | atoms → platform-constants / platform-types | 73 / 72 | 0 |
 | lib → prisma | 44 | 5 |
@@ -109,9 +113,9 @@ In practice every package resolves the others through Yarn workspace hoisting an
 
 ## 4. Circular dependencies
 
-All prod import edges were run through Tarjan's strongly-connected-components algorithm. The result is **one SCC of 16 packages**: `web, features, feature-auth, ee, billing, app-store, trpc, lib, prisma, ui, atoms, emails, types, platform-libraries, embed-react, embed-snippet`. There is also a small `platform-enums ↔ platform-types` cycle.
+All prod import edges were run through Tarjan's strongly-connected-components algorithm. The result is **one SCC of 14 packages**: `web, features, feature-auth, ee, billing, app-store, trpc, lib, prisma, ui, atoms, emails, types, platform-libraries`. There is also a small `platform-enums ↔ platform-types` cycle.
 
-The SCC contains 30 direct two-package cycles. The three most important are below.
+The SCC contains 31 direct two-package cycles. The three most important are below.
 
 ### 4.1 `features` ↔ `app-store` (80 prod files → / 45 prod files ←)
 
@@ -134,46 +138,46 @@ This produces a tight loop: `EventManager` (features) calls app-store calendar/v
 
 `biome.json` already has a `noRestrictedImports` rule for `packages/features/**` that bans `../trpc/**`. It only matches **relative** paths, so the `@calcom/trpc/...` alias imports above pass lint.
 
-### 4.3 `features` ↔ `atoms` (7 prod files → / 41 prod files ←)
+### 4.3 `features` ↔ `atoms` (6 prod files → / 41 prod files ←)
 
-- **features → atoms** (declared in `packages/features/package.json`): for example `packages/features/bookings/Booker/components/hooks/useBookings.ts`, `packages/features/components/phone-input/PhoneInput.tsx`, `packages/features/embed/lib/EmbedCodes.tsx`.
+- **features → atoms** (declared in `packages/features/package.json`): for example `packages/features/bookings/Booker/components/hooks/useBookings.ts`, `packages/features/components/phone-input/PhoneInput.tsx`, `packages/features/schedules/components/Schedule.tsx`.
 - **atoms → features** (undeclared): platform wrappers such as `packages/platform/atoms/booker/BookerPlatformWrapper.tsx`, `packages/platform/atoms/booker/BookerWebWrapper.tsx`, `packages/platform/atoms/availability/wrappers/AvailabilitySettingsPlatformWrapper.tsx`, `packages/platform/atoms/list-schedules/wrappers/ListSchedulesPlatformWrapper.tsx`.
 
 ### 4.4 Other notable cycles (outside the requested three)
 
 | Cycle | Example back-edge file |
 |---|---|
-| `features` ↔ `ee` (50 / 56 prod) | `packages/features/bookings/lib/BookingEmailSmsHandler.ts` → ee; `packages/features/ee/dsync/lib/assignValueToUser.ts` → features |
+| `features` ↔ `ee` (50 / 55 prod) | `packages/features/bookings/lib/BookingEmailSmsHandler.ts` → ee; `packages/features/ee/dsync/lib/assignValueToUser.ts` → features |
 | `trpc` ↔ `ee` (83 / 11 prod) | `packages/features/ee/dsync/lib/handleUserEvents.ts`, `packages/features/ee/deployment/licensekey/CreateLicenseKeyForm.tsx` → `@calcom/trpc` |
 | `lib` ↔ `web`, `lib` ↔ `atoms` | `packages/lib/hooks/useLocale.ts` imports `@calcom/web/app/AppRouterI18nProvider`, `@calcom/web/app/CustomI18nProvider`, `@calcom/atoms/hooks/useAtomsContext` |
 | `lib` ↔ `ee` | `packages/lib/domainManager/organization.ts`, `packages/lib/formatCalendarEvent.ts` |
 | `lib` ↔ `prisma` | `packages/prisma/zod-utils.ts` imports `@calcom/lib` |
 | `ui` ↔ `features` | `packages/ui/components/calendar-switch/CalendarSwitch.tsx` |
-| `web` ↔ `features` (4 prod files back) | `packages/features/calendars/weeklyview/index.tsx`, `packages/features/pbac/lib/team-member-permissions.ts` |
+| `web` ↔ `features` (3 prod files back) | `packages/features/calendars/weeklyview/index.tsx`, `packages/features/pbac/lib/team-member-permissions.ts` |
 | `web` ↔ `atoms` (30 prod files back) | `packages/platform/atoms/booker/BookerPlatformWrapper.tsx` |
 | `platform-enums` ↔ `platform-types` | `packages/platform/enums/permissions.ts` |
 
 ### 4.5 Core cycle cluster
 
-Solid arrows are declared edges. Dashed arrows are import-only (undeclared). Labels are prod file counts.
+Solid arrows are declared edges. Dashed arrows are import-only (undeclared). Labels are prod file counts. Counts for `app-store` include its sub-packages.
 
 ```mermaid
 graph LR
   features -- 251 --> lib
   features -- 44 --> ui
   features -- 49 --> trpc
-  features -- 7 --> atoms
+  features -- 6 --> atoms
   features -. 80 .-> appstore[app-store]
   features -. 298 .-> prisma
 
   appstore -- 45 --> features
-  appstore -- 231 --> lib
-  appstore -- 52 --> ui
+  appstore -- 230 --> lib
+  appstore -- 51 --> ui
   appstore -. 152 .-> prisma
 
   trpc -. 223 .-> features
   trpc -. 46 .-> appstore
-  trpc -. 139 .-> lib
+  trpc -. 138 .-> lib
   trpc -. 279 .-> prisma
 
   atoms -. 41 .-> features
@@ -183,9 +187,10 @@ graph LR
   atoms -. 15 .-> prisma
   atoms -. 8 .-> appstore
 
-  ui -- 37 --> lib
+  ui -- 36 --> lib
   ui -. 3 .-> prisma
-  ui -. 2 .-> features
+  ui -. 1 .-> features
+  ui -. 2 .-> ee[ee via features/ee]
 
   lib -. 44 .-> prisma
   lib -. 1 .-> atoms
@@ -198,32 +203,38 @@ graph LR
 |---|---|---|---|---|
 | 1 | features ↔ app-store | 80 / 45 | Booking creation, payments, calendar/video sync, routing forms | Shared contracts (app metadata, `Calendar`/`VideoApiAdapter`/payment service interfaces) in `@calcom/types` or a new `@calcom/app-store-types` leaf |
 | 2 | features ↔ trpc | 49 / 223 | All viewer routers, Booker UI hooks, slot computation, DI container | Move `AvailableSlotsService` into features; move client hooks/types into a `@calcom/trpc-client` leaf; move `flags/server/router.ts` into trpc |
-| 3 | features ↔ atoms | 7 / 41 | Platform SDK (atoms) and web Booker | Keep atoms → features one-way. Move `useIsPlatform`, `useHandleBookEvent` and the `availability/types` that features imports from atoms into features or a small leaf |
+| 3 | features ↔ atoms | 6 / 41 | Platform SDK (atoms) and web Booker | Keep atoms → features one-way. Move `useIsPlatform`, `useHandleBookEvent` and the `availability/types` that features imports from atoms into features or a small leaf |
 | 4 | lib ↔ {web, atoms, ee, prisma} | 1–2 back-edges each | Every package (lib has the highest fan-in) | Move `useLocale` out of lib; split lib into server/shared (P3) |
-| 5 | features ↔ ee, trpc ↔ ee | 50 / 56, 83 / 11 | Org/team, billing, workflows | Treat `features/ee` as part of features (merge manifests) or give it a one-way interface |
-| 6 | ui ↔ features / ee / prisma | 2–3 files | Presentational layer pulls in server code | P4 |
+| 5 | features ↔ ee, trpc ↔ ee | 50 / 55, 83 / 11 | Org/team, billing, workflows | Treat `features/ee` as part of features (merge manifests) or give it a one-way interface |
+| 6 | ui ↔ features / ee / prisma | 1–3 files | Presentational layer pulls in server code | P4 |
 
 ## 5. Fan-out analysis
 
 ### 5.1 File-level (top offenders by `from "@calcom/*"` statements, non-test)
 
-| File | `@calcom/*` import/re-export statements | Notes |
-|---|---|---|
-| `packages/features/bookings/lib/service/RegularBookingService.ts` | 67 (91 named bindings; 100 import statements total) | Core booking orchestration |
-| `packages/platform/libraries/index.ts` | 56 (mix of `import` and multi-line `export { … } from`) | Barrel for the platform API |
-| `apps/web/modules/bookings/views/bookings-single-view.tsx` | 44 | |
-| `packages/trpc/server/routers/viewer/slots/util.ts` | 42 (40 unique specifiers) | Holds `AvailableSlotsService` |
-| `apps/web/modules/event-types/views/event-types-listing-view.tsx` | 41 | |
-| `packages/features/bookings/lib/handleCancelBooking.ts` | 36 | |
-| `packages/trpc/server/routers/viewer/bookings/confirm.handler.ts` | 29 (28 unique specifiers) | |
-| `packages/trpc/server/routers/viewer/teams/inviteMember/utils.ts` | 23 (20 unique specifiers) | |
+These are the top 10 files in `apps/web` and `packages/`, followed by the trpc handlers from the brief and their rank.
+
+| Rank | File | `@calcom/*` import/re-export statements | Notes |
+|---|---|---|---|
+| 1 | `packages/features/bookings/lib/service/RegularBookingService.ts` | 67 (91 named bindings; 100 import statements total) | Core booking orchestration |
+| 2 | `packages/platform/libraries/index.ts` | 56 (mix of `import` and multi-line `export { … } from`) | Barrel for the platform API |
+| 3 | `apps/web/modules/bookings/views/bookings-single-view.tsx` | 44 | |
+| 4 | `packages/trpc/server/routers/viewer/slots/util.ts` | 42 (40 unique specifiers) | Holds `AvailableSlotsService` |
+| 5 | `apps/web/modules/event-types/views/event-types-listing-view.tsx` | 41 | |
+| 6 | `apps/web/modules/ee/workflows/components/WorkflowStepContainer.tsx` | 39 | |
+| 7 | `apps/web/modules/embed/components/Embed.tsx` | 37 | |
+| 8 | `packages/features/bookings/lib/handleCancelBooking.ts` | 36 | |
+| 9 | `apps/web/app/(use-page-wrapper)/apps/routing-forms/[...pages]/RouteBuilder.tsx` | 34 | |
+| 10 | `apps/web/modules/event-types/components/tabs/advanced/EventAdvancedTab.tsx` | 33 | |
+| 13 | `packages/trpc/server/routers/viewer/bookings/confirm.handler.ts` | 29 (28 unique specifiers) | |
+| 27 | `packages/trpc/server/routers/viewer/teams/inviteMember/utils.ts` | 23 (20 unique specifiers) | Tied with 5 other files at 23 |
 
 ### 5.2 Package-level
 
 | Package | Declared workspace deps | Distinct workspace packages imported in source |
 |---|---|---|
 | `@calcom/web` | 15 runtime (+2 dev) | 17 |
-| `@calcom/features` | 5 | 17 |
+| `@calcom/features` | 5 | 16 |
 | `@calcom/atoms` | 0 | 14 |
 | `@calcom/trpc` | 0 | 13 |
 | `@calcom/app-store` | 7 (+1 dev) | 12 (excluding its own sub-packages) |
@@ -232,9 +243,9 @@ graph LR
 
 | Package | Importing files (prod + test) | Importing packages |
 |---|---|---|
-| `@calcom/lib` | 1,777 | 14 |
+| `@calcom/lib` | 1,776 | 14 |
 | `@calcom/prisma` | 1,488 | 14 |
-| `@calcom/features` (incl. ee/auth paths resolved separately) | 919 | 12 |
+| `@calcom/features` (ee/auth paths resolved separately) | 917 | 12 |
 | `@calcom/ui` | 708 | 9 |
 | `@calcom/trpc` | 479 | 6 |
 | `@calcom/app-store` | 297 | 11 |
@@ -270,15 +281,15 @@ Refactoring `@calcom/prisma` (schema, generated enums, `selects/*`, `zod-utils`)
 | `features → app-store` | 106 files (80 prod), e.g. `packages/features/bookings/lib/EventManager.ts` | **No** (the reverse edge `app-store → features` is declared) |
 | `trpc → *` | 13 workspace packages imported, incl. prisma (316 files), features (251), lib (155) | **No**: `packages/trpc/package.json` declares no workspace deps |
 | `atoms → *` | 14 workspace packages imported, incl. features, trpc, web, prisma | **No**: `packages/platform/atoms/package.json` declares no workspace deps |
-| `app-store → prisma` | 164 files (core `packages/app-store` manifest; 26 sub-packages declare it themselves) | **No** in `packages/app-store/package.json` |
-| `ui → prisma`, `ui → features`, `ui → ee` | `packages/ui/components/avatar/UserAvatar.tsx` (type-only `User`), `UserAvatarGroup.tsx`, `UserAvatarGroupWithOrg.tsx`, `calendar-switch/CalendarSwitch.tsx` | **No** |
+| `app-store → prisma` | 164 files under `packages/app-store`, split by owning manifest: 71 files in the 26 sub-packages that declare prisma (not a gap); 37 files (33 prod) in the core `packages/app-store` workspace, e.g. `packages/app-store/server.ts`; 56 files in 17 sub-packages that don't declare it (e.g. `packages/app-store/alby`, `packages/app-store/jitsivideo`) | **No** for the core `packages/app-store/package.json` and those 17 sub-packages |
+| `ui → prisma`, `ui → features`, `ui → ee` | `packages/ui/components/avatar/UserAvatar.tsx` (type-only `User`), `UserAvatarGroup.tsx` / `UserAvatarGroupWithOrg.tsx` (`getBookerBaseUrlSync` from features/ee), `calendar-switch/CalendarSwitch.tsx` (`ICalendarSwitchProps` from features) | **No** |
 | `types → prisma` | 10 `.d.ts` files, e.g. `packages/types/App.d.ts`, `packages/types/Calendar.d.ts` | **No** |
 
 **Recommendation:** add a lint rule that every `@calcom/*` package imported by a workspace's source must appear in that workspace's `package.json`. Options are a dependency-cruiser rule, eslint `import/no-extraneous-dependencies` with `packageDir`, or a small CI script that reproduces the scan in §1. Without this rule, Turbo's `dependsOn: ["^build"]` graph is incomplete and cycles go unnoticed.
 
 ## 8. Coupling hotspots
 
-- **`@calcom/lib` is a kitchen sink.** It mixes Prisma-backed repositories (`packages/lib/server/repository/*`), heavy server services (`packages/lib/CalendarService.ts`, `packages/lib/CloseCom.ts`), React hooks (`packages/lib/hooks/useLocale.ts`, which imports from `apps/web`) and client-safe helpers (constants, formatting). Because of this, lib has the highest fan-in (1,777 files) and a back-edge to almost every layer.
+- **`@calcom/lib` is a kitchen sink.** It mixes Prisma-backed repositories (`packages/lib/server/repository/*`), heavy server services (`packages/lib/CalendarService.ts`, `packages/lib/CloseCom.ts`), React hooks (`packages/lib/hooks/useLocale.ts`, which imports from `apps/web`) and client-safe helpers (constants, formatting). Because of this, lib has the highest fan-in (1,776 files) and a back-edge to almost every layer.
 - **`ui → lib` pulls non-presentational code into the UI layer.** `ui` imports `@calcom/lib/hooks/useLocale` (30 files), `@calcom/lib/constants` (7), avatar helpers (`defaultAvatarImage` 4, `getAvatarUrl` 3, `checkIfItFallbackImage` 2), hooks (`useMediaQuery`, `useUrlMatchesCurrentUrl`, `useCompatSearchParams`) and `errors`. Through `useLocale`, `ui` transitively reaches `apps/web` and `atoms`. `ui` takes class-name merging from the npm `classnames` package, not from lib.
 - **The `platform-libraries` barrel.** `packages/platform/libraries/index.ts` re-exports a wide surface across features, ee, trpc, app-store and prisma (`Prisma` types, `credentialForCalendarServiceSelect`) through 56 statements. Any consumer of the barrel depends on all of them.
 - **app-store reaches into features internals.** app-store imports concrete modules such as `@calcom/features/bookings/lib/EventManager` and `@calcom/features/credentials/repositories/CredentialRepository` instead of a stable interface. Every internal refactor in features risks breaking ~100 app integrations.
@@ -288,10 +299,10 @@ Refactoring `@calcom/prisma` (schema, generated enums, `selects/*`, `zod-utils`)
 
 | Priority | Recommendation | Cycles/edges removed |
 |---|---|---|
-| **P1** | Break `features ↔ app-store` by extracting shared contracts (app metadata types, `Calendar`/`VideoApiAdapter`/payment service interfaces, credential shapes) into `@calcom/types` or a new leaf `@calcom/app-store-types`. app-store implements the interfaces, and features consumes them through the registry and DI. | features → app-store (80 prod files) |
+| **P1** | Break `features ↔ app-store` by extracting shared contracts (app metadata types, `Calendar`/`VideoApiAdapter`/payment service interfaces, credential shapes) into a new leaf `@calcom/app-store-types` that has no `@calcom/app-store` or `@calcom/features` imports. app-store implements the interfaces, and features consumes them through the registry and DI. `@calcom/types` is not a clean target yet: `packages/types/App.d.ts` (`Tag` from `@calcom/app-store/types`) and `packages/types/VideoApiAdapter.d.ts` (`@calcom/app-store/dailyvideo/zod`) import app-store. Those types would have to move into the new leaf first. | features → app-store (80 prod files) |
 | **P2** | Break `features ↔ trpc`: (a) move `AvailableSlotsService` from `packages/trpc/server/routers/viewer/slots/util.ts` into features so that `packages/features/di/modules/AvailableSlots.ts` no longer reaches into trpc; (b) move `packages/features/flags/server/router.ts` into trpc; (c) move client-side tRPC hooks/types used by features (Booker hooks) into a leaf package such as `@calcom/trpc-client` that does not depend on features. | features → trpc (49 prod files) |
 | **P3** | Split `@calcom/lib` into `lib-server` (Prisma repositories, `CalendarService`, CloseCom, etc.) and `lib-shared` (formatting, constants, pure helpers). Move `useLocale` out of lib so lib no longer imports `@calcom/web`/`@calcom/atoms`. Audit and **declare** the `@calcom/prisma` imports in lib, features, trpc, app-store core, ui and types. | lib ↔ web/atoms/ee/prisma; undeclared prisma edges |
-| **P4** | Remove the `ui → lib` edge by moving the utilities that ui uses (`useLocale`, `constants`, `defaultAvatarImage`, `getAvatarUrl`, `checkIfItFallbackImage`, media/URL hooks) into ui-local modules or a small `lib-ui` leaf. Also replace the `@calcom/prisma/client` `User` type in `packages/ui/components/avatar/*` with a local prop type. | ui → lib/prisma/features/ee |
+| **P4** | Remove the `ui → lib` edge by moving the utilities that ui uses (`useLocale`, `constants`, `defaultAvatarImage`, `getAvatarUrl`, `checkIfItFallbackImage`, media/URL hooks) into ui-local modules or a small `lib-ui` leaf. Also: replace the `@calcom/prisma/client` `User` type in `packages/ui/components/avatar/*` with a local prop type; move `ICalendarSwitchProps` from `@calcom/features/calendars/CalendarSwitch` into `packages/ui/components/calendar-switch/CalendarSwitch.tsx`; have `UserAvatarGroup`/`UserAvatarGroupWithOrg` take the booker base URL as a prop instead of calling `getBookerBaseUrlSync` from `packages/features/ee/organizations/lib/getBookerBaseUrlSync.ts`. | ui → lib/prisma/features/ee |
 | **P5** | Replace the `packages/platform/libraries/index.ts` barrel with explicit per-domain entry points (some already exist, e.g. `packages/platform/libraries/app-store.ts`, `event-types.ts`). Forbid deep imports into features/prisma internals from platform consumers. | Barrel-wide coupling |
 | **P6** | Reduce `RegularBookingService` fan-out (67 `@calcom/*` imports) using the existing DI container (`packages/features/di`, `packages/features/bookings/di/RegularBookingService.module.ts`). Inject repositories and services instead of importing concrete modules. | File-level fan-out |
 | **P7** | Add tooling guardrails: dependency-cruiser (or eslint `import/no-cycle`) over the `@calcom/*` aliases, plus a workspace-boundary / undeclared-dependency rule (§7). Extend the existing `biome.json` `noRestrictedImports` patterns from relative paths to alias paths (e.g. `@calcom/trpc/**` in features, `@calcom/features/**` in app-store). Run it in CI with an allowlist of current violations that can only shrink. | Prevents regression |
