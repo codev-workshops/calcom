@@ -112,6 +112,32 @@ function createInsightsBookingService(
   });
 }
 
+function createPreviousPeriodInsightsBookingService(
+  ctx: { user: { id: number; organizationId: number | null } },
+  input: z.infer<typeof bookingRepositoryBaseInputSchema>,
+  currentPeriodService: ReturnType<typeof createInsightsBookingService>
+) {
+  const previousPeriodDates = currentPeriodService.calculatePreviousPeriodDates();
+  const previousPeriodColumnFilters = replaceDateRangeColumnFilter({
+    columnFilters: input.columnFilters,
+    newStartDate: previousPeriodDates.startDate,
+    newEndDate: previousPeriodDates.endDate,
+  });
+
+  return {
+    previousPeriodDates,
+    previousPeriodService: createInsightsBookingService(ctx, {
+      ...input,
+      columnFilters: previousPeriodColumnFilters,
+    }),
+  };
+}
+
+const getPercentageChange = (current: number, previous: number): number => {
+  if (previous === 0) return current > 0 ? 100 : 0;
+  return ((current - previous) / previous) * 100;
+};
+
 function createInsightsRoutingService(
   ctx: { insightsDb: PrismaClient; user: { id: number; organizationId: number | null } },
   input: z.infer<typeof routingRepositoryBaseInputSchema>
@@ -847,6 +873,101 @@ export const insightsRouter = router({
           timeZone,
           dateRanges,
         });
+      } catch {
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+      }
+    }),
+  averageLeadTime: userBelongsToTeamProcedure
+    .input(bookingRepositoryBaseInputSchema)
+    .query(async ({ ctx, input }) => {
+      const { columnFilters, timeZone } = input;
+      const { startDate, endDate } = extractDateRangeFromColumnFilters(columnFilters);
+
+      const timeView = getTimeView(startDate, endDate);
+      const dateRanges = getDateRanges({
+        startDate,
+        endDate,
+        timeView,
+        timeZone,
+        weekStart: ctx.user.weekStart,
+      });
+
+      const insightsBookingService = createInsightsBookingService(ctx, input);
+      try {
+        return await insightsBookingService.getAverageLeadTimeStats({
+          timeZone,
+          dateRanges,
+        });
+      } catch {
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+      }
+    }),
+  leadTimeStats: userBelongsToTeamProcedure
+    .input(bookingRepositoryBaseInputSchema)
+    .query(async ({ ctx, input }) => {
+      const currentPeriodService = createInsightsBookingService(ctx, input);
+      const { previousPeriodService, previousPeriodDates } = createPreviousPeriodInsightsBookingService(
+        ctx,
+        input,
+        currentPeriodService
+      );
+
+      try {
+        const [currentStats, previousStats] = await Promise.all([
+          currentPeriodService.getAverageLeadTime(),
+          previousPeriodService.getAverageLeadTime(),
+        ]);
+
+        return {
+          empty: currentStats.bookingsCount === 0,
+          average: {
+            count: currentStats.averageDays,
+            deltaPrevious: getPercentageChange(currentStats.averageDays, previousStats.averageDays),
+          },
+          median: {
+            count: currentStats.medianDays,
+            deltaPrevious: getPercentageChange(currentStats.medianDays, previousStats.medianDays),
+          },
+          previousRange: {
+            startDate: previousPeriodDates.formattedStartDate,
+            endDate: previousPeriodDates.formattedEndDate,
+          },
+        };
+      } catch {
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+      }
+    }),
+  noShowRateStats: userBelongsToTeamProcedure
+    .input(bookingRepositoryBaseInputSchema)
+    .query(async ({ ctx, input }) => {
+      const currentPeriodService = createInsightsBookingService(ctx, input);
+      const { previousPeriodService, previousPeriodDates } = createPreviousPeriodInsightsBookingService(
+        ctx,
+        input,
+        currentPeriodService
+      );
+
+      try {
+        const [currentStats, previousStats] = await Promise.all([
+          currentPeriodService.getNoShowRateStats(),
+          previousPeriodService.getNoShowRateStats(),
+        ]);
+
+        return {
+          empty: currentStats.totalBookings === 0,
+          host: {
+            count: currentStats.hostNoShowRate,
+            deltaPrevious: getPercentageChange(currentStats.hostNoShowRate, previousStats.hostNoShowRate),
+          },
+          guest: {
+            count: currentStats.guestNoShowRate,
+            deltaPrevious: getPercentageChange(currentStats.guestNoShowRate, previousStats.guestNoShowRate),
+          },
+          previousRange: {
+            startDate: previousPeriodDates.formattedStartDate,
+            endDate: previousPeriodDates.formattedEndDate,
+          },
+        };
       } catch {
         throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
       }
