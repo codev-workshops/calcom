@@ -29,9 +29,3 @@ export function addRecentImpersonation(usernameRaw: string): void {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
   } catch {}
 }
-
-export function clearRecentImpersonations(): void {
-  try {
-    localStorage.removeItem(STORAGE_KEY);
-  } catch {}
-}
