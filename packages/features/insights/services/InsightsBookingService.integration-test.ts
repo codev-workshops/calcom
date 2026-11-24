@@ -747,4 +747,99 @@ describe("InsightsBookingService Integration Tests", () => {
       await testData.cleanup();
     });
   });
+
+  describe("Lead time and no-show rate stats", () => {
+    it("should compute lead time and no-show rates for the user's bookings", async () => {
+      const testData = await createTestData();
+      const now = Date.now();
+      const day = 24 * 60 * 60 * 1000;
+
+      const createdBookings = await Promise.all(
+        [2, 4, 9].map((leadDays, index) =>
+          prisma.booking.create({
+            data: {
+              uid: `lead-time-booking-${now}-${index}-${Math.random().toString(36).substring(7)}`,
+              title: "Lead Time Booking",
+              createdAt: new Date(now - day),
+              startTime: new Date(now - day + leadDays * day),
+              endTime: new Date(now - day + leadDays * day + 60 * 60 * 1000),
+              userId: testData.user.id,
+              status: BookingStatus.ACCEPTED,
+              noShowHost: index === 0,
+              attendees: {
+                create: [
+                  {
+                    email: `guest-a-${index}@example.com`,
+                    name: "Guest A",
+                    timeZone: "UTC",
+                    noShow: index === 1,
+                  },
+                  { email: `guest-b-${index}@example.com`, name: "Guest B", timeZone: "UTC", noShow: false },
+                ],
+              },
+            },
+          })
+        )
+      );
+
+      const service = new InsightsBookingService({
+        prisma,
+        options: { scope: "user", userId: testData.user.id, orgId: testData.org.id },
+        filters: {
+          columnFilters: [
+            {
+              id: "createdAt",
+              value: {
+                type: ColumnFilterType.DATE_RANGE,
+                data: {
+                  startDate: new Date(now - 3 * day).toISOString(),
+                  endDate: new Date(now + day).toISOString(),
+                  preset: "c",
+                },
+              },
+            },
+          ],
+        },
+      });
+
+      const leadTime = await service.getAverageLeadTime();
+      expect(leadTime).toEqual({ bookingsCount: 3, averageDays: 5, medianDays: 4 });
+
+      const noShowRate = await service.getNoShowRateStats();
+      expect(noShowRate).toEqual({
+        totalBookings: 3,
+        noShowHostBookings: 1,
+        hostNoShowRate: 33.3,
+        totalAttendees: 6,
+        noShowAttendees: 1,
+        guestNoShowRate: 16.7,
+      });
+
+      const trend = await service.getAverageLeadTimeStats({
+        timeZone: "UTC",
+        dateRanges: [
+          {
+            startDate: new Date(now - 3 * day).toISOString(),
+            endDate: new Date(now - 2 * day).toISOString(),
+            formattedDate: "Earlier",
+            formattedDateFull: "Earlier",
+          },
+          {
+            startDate: new Date(now - day).toISOString(),
+            endDate: new Date(now + day).toISOString(),
+            formattedDate: "Current",
+            formattedDateFull: "Current",
+          },
+        ],
+      });
+      expect(trend).toEqual([
+        { formattedDateFull: "Earlier", Month: "Earlier", Average: 0, Median: 0, Count: 0 },
+        { formattedDateFull: "Current", Month: "Current", Average: 5, Median: 4, Count: 3 },
+      ]);
+
+      await prisma.attendee.deleteMany({ where: { bookingId: { in: createdBookings.map((b) => b.id) } } });
+      await prisma.booking.deleteMany({ where: { id: { in: createdBookings.map((b) => b.id) } } });
+      await testData.cleanup();
+    });
+  });
 });

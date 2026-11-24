@@ -40,6 +40,9 @@ export const buildHashMapForUsers = <
   return userHashMap;
 };
 
+const roundToOneDecimal = (value: number | null | undefined) =>
+  value === null || value === undefined ? 0 : parseFloat(Number(value).toFixed(1));
+
 // Type definition for BookingTimeStatusDenormalized view
 export type BookingTimeStatusDenormalized = z.infer<typeof bookingDataSchema>;
 
@@ -1315,6 +1318,147 @@ export class InsightsBookingBaseService {
     });
 
     return result;
+  }
+
+  async getAverageLeadTimeStats({ timeZone, dateRanges }: { timeZone: string; dateRanges: DateRange[] }) {
+    if (!dateRanges.length) {
+      return [];
+    }
+
+    const baseConditions = await this.getBaseConditions();
+    const { dateTarget } = extractDateRangeFromColumnFilters(this.filters?.columnFilters);
+    const dateColumn = dateTarget === "createdAt" ? Prisma.sql`b."createdAt"` : Prisma.sql`b."startTime"`;
+
+    const rangeValues = Prisma.join(
+      dateRanges.map(
+        (range, index) =>
+          Prisma.sql`(${index}::int, DATE(${range.startDate}::timestamptz AT TIME ZONE ${timeZone}), DATE(${range.endDate}::timestamptz AT TIME ZONE ${timeZone}))`
+      )
+    );
+
+    const query = Prisma.sql`
+      WITH date_ranges AS (
+        SELECT * FROM (VALUES ${rangeValues}) AS dr("rangeIndex", "rangeStart", "rangeEnd")
+      ),
+      lead_times AS (
+        SELECT
+          DATE((${dateColumn} AT TIME ZONE 'UTC') AT TIME ZONE ${timeZone}) as "date",
+          EXTRACT(EPOCH FROM (b."startTime" - b."createdAt")) / 86400 as "leadTimeDays"
+        FROM "BookingTimeStatusDenormalized" b
+        WHERE ${baseConditions}
+      )
+      SELECT
+        dr."rangeIndex",
+        CAST(COUNT(lt."leadTimeDays") AS INTEGER) as "bookingsCount",
+        CAST(AVG(lt."leadTimeDays") AS DOUBLE PRECISION) as "averageDays",
+        CAST(percentile_cont(0.5) WITHIN GROUP (ORDER BY lt."leadTimeDays") AS DOUBLE PRECISION) as "medianDays"
+      FROM date_ranges dr
+      INNER JOIN lead_times lt ON lt."date" >= dr."rangeStart" AND lt."date" <= dr."rangeEnd"
+      GROUP BY dr."rangeIndex"
+    `;
+
+    const data =
+      await this.prisma.$queryRaw<
+        {
+          rangeIndex: number;
+          bookingsCount: number;
+          averageDays: number | null;
+          medianDays: number | null;
+        }[]
+      >(query);
+
+    const statsByRangeIndex = new Map(data.map((row) => [Number(row.rangeIndex), row]));
+
+    return dateRanges.map(({ formattedDate, formattedDateFull }, index) => {
+      const stats = statsByRangeIndex.get(index);
+      return {
+        formattedDateFull,
+        Month: formattedDate,
+        Average: roundToOneDecimal(stats?.averageDays),
+        Median: roundToOneDecimal(stats?.medianDays),
+        Count: stats ? Number(stats.bookingsCount) : 0,
+      };
+    });
+  }
+
+  async getAverageLeadTime() {
+    const baseConditions = await this.getBaseConditions();
+
+    const query = Prisma.sql`
+      SELECT
+        CAST(COUNT(*) AS INTEGER) as "bookingsCount",
+        CAST(AVG(EXTRACT(EPOCH FROM ("startTime" - "createdAt")) / 86400) AS DOUBLE PRECISION) as "averageDays",
+        CAST(
+          percentile_cont(0.5) WITHIN GROUP (ORDER BY EXTRACT(EPOCH FROM ("startTime" - "createdAt")) / 86400)
+          AS DOUBLE PRECISION
+        ) as "medianDays"
+      FROM "BookingTimeStatusDenormalized"
+      WHERE ${baseConditions}
+    `;
+
+    const data =
+      await this.prisma.$queryRaw<
+        { bookingsCount: number; averageDays: number | null; medianDays: number | null }[]
+      >(query);
+
+    const stats = data[0];
+    return {
+      bookingsCount: stats ? Number(stats.bookingsCount) : 0,
+      averageDays: roundToOneDecimal(stats?.averageDays),
+      medianDays: roundToOneDecimal(stats?.medianDays),
+    };
+  }
+
+  async getNoShowRateStats() {
+    const baseConditions = await this.getBaseConditions();
+
+    const query = Prisma.sql`
+      WITH host_stats AS (
+        SELECT
+          COUNT(*) as "totalBookings",
+          COUNT(*) FILTER (WHERE "noShowHost" = true) as "noShowHostBookings"
+        FROM "BookingTimeStatusDenormalized"
+        WHERE ${baseConditions}
+      ),
+      guest_stats AS (
+        SELECT
+          COUNT(a.id) as "totalAttendees",
+          COUNT(a.id) FILTER (WHERE a."noShow" = true) as "noShowAttendees"
+        FROM "Attendee" a
+        INNER JOIN "BookingTimeStatusDenormalized" b ON a."bookingId" = b.id
+        WHERE ${baseConditions}
+      )
+      SELECT
+        CAST(hs."totalBookings" AS INTEGER) as "totalBookings",
+        CAST(hs."noShowHostBookings" AS INTEGER) as "noShowHostBookings",
+        CAST(gs."totalAttendees" AS INTEGER) as "totalAttendees",
+        CAST(gs."noShowAttendees" AS INTEGER) as "noShowAttendees"
+      FROM host_stats hs, guest_stats gs
+    `;
+
+    const data =
+      await this.prisma.$queryRaw<
+        {
+          totalBookings: number;
+          noShowHostBookings: number;
+          totalAttendees: number;
+          noShowAttendees: number;
+        }[]
+      >(query);
+
+    const totalBookings = Number(data[0]?.totalBookings ?? 0);
+    const noShowHostBookings = Number(data[0]?.noShowHostBookings ?? 0);
+    const totalAttendees = Number(data[0]?.totalAttendees ?? 0);
+    const noShowAttendees = Number(data[0]?.noShowAttendees ?? 0);
+
+    return {
+      totalBookings,
+      noShowHostBookings,
+      hostNoShowRate: totalBookings > 0 ? roundToOneDecimal((noShowHostBookings / totalBookings) * 100) : 0,
+      totalAttendees,
+      noShowAttendees,
+      guestNoShowRate: totalAttendees > 0 ? roundToOneDecimal((noShowAttendees / totalAttendees) * 100) : 0,
+    };
   }
 
   private async isOwnerOrAdmin(userId: number, targetId: number): Promise<boolean> {

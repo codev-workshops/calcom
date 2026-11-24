@@ -1,5 +1,6 @@
 export { AverageEventDurationChart } from "./AverageEventDurationChart";
-export { BookingKPICards } from "./BookingKPICards";
+export { AverageLeadTimeChart } from "./AverageLeadTimeChart";
+export { BookingKPICards, LeadTimeAndNoShowRateKPICards } from "./BookingKPICards";
 export { CSATOverTimeChart } from "./CSATOverTimeChart";
 export { EventTrendsChart } from "./EventTrendsChart";
 export { HighestNoShowHostTable } from "./HighestNoShowHostTable";

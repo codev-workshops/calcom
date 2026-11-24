@@ -14,12 +14,14 @@ import { useDataTable } from "@calcom/features/data-table/hooks/useDataTable";
 import { useSegments } from "@calcom/features/data-table/hooks/useSegments";
 import {
   AverageEventDurationChart,
+  AverageLeadTimeChart,
   BookingKPICards,
   BookingsByHourChart,
   CSATOverTimeChart,
   EventTrendsChart,
   HighestNoShowHostTable,
   HighestRatedMembersTable,
+  LeadTimeAndNoShowRateKPICards,
   LeastBookedTeamMembersTable,
   LowestRatedMembersTable,
   MostBookedTeamMembersTable,
@@ -103,6 +105,8 @@ function InsightsPageContent() {
       <div className="my-4 stack-y-4">
         <BookingKPICards />
 
+        <LeadTimeAndNoShowRateKPICards />
+
         <EventTrendsChart />
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -116,6 +120,9 @@ function InsightsPageContent() {
           </div>
           <div className="sm:col-span-2">
             <AverageEventDurationChart />
+          </div>
+          <div className="sm:col-span-2">
+            <AverageLeadTimeChart />
           </div>
         </div>
 
