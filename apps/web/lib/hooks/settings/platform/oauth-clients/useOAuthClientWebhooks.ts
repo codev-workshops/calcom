@@ -38,21 +38,6 @@ export const useOAuthClientWebhooks = (clientId: string) => {
   return { ...query, data: query.data?.data ?? [], status: query.data?.status };
 };
 
-export const useOAuthClientWebhook = (clientId: string, webhookId: string) => {
-  const query = useQuery<ApiSuccessResponse<Output>>({
-    queryKey: ["oauth-clients-webhooks", "findOne", clientId, webhookId],
-    queryFn: () => {
-      return fetch(`/api/v2/oauth-clients/${clientId}/webhooks/${webhookId}`, {
-        method: "get",
-        headers: { "Content-type": "application/json" },
-      }).then((res) => res.json());
-    },
-    enabled: !!clientId,
-  });
-
-  return { ...query, data: query.data?.data ?? [], status: query.data?.status };
-};
-
 export const useUpdateOAuthClientWebhook = (clientId: string) => {
   const mutation = useMutation<
     ApiSuccessResponse<Output>,
