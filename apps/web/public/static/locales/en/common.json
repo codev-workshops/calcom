@@ -2469,6 +2469,8 @@
   "no_show_hosts_over_time": "No-Show Hosts Over Time",
   "average_lead_time": "Average Booking Lead Time",
   "median_lead_time": "Median Booking Lead Time",
+  "lead_time_average": "Average",
+  "lead_time_median": "Median",
   "host_no_show_rate": "No-Show Rate (Host)",
   "guest_no_show_rate": "No-Show Rate (Guest)",
   "lead_time_and_no_show_rate": "Lead Time & No-Show Rate",

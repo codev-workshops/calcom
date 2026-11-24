@@ -23,7 +23,7 @@ const CustomTooltip = ({
 }: {
   active?: boolean;
   payload?: Array<{
-    value: number;
+    value: number | null;
     dataKey: string;
     name: string;
     color: string;
@@ -38,11 +38,13 @@ const CustomTooltip = ({
   return (
     <div className="bg-default text-inverted border-subtle rounded-lg border p-3 shadow-lg">
       <p className="text-default font-medium">{payload[0].payload.formattedDateFull}</p>
-      {payload.map((entry, index: number) => (
-        <p key={index} style={{ color: entry.color }}>
-          {entry.name}: {t("insights_value_in_days", { value: valueFormatter(entry.value) })}
-        </p>
-      ))}
+      {payload.map((entry) =>
+        entry.value === null ? null : (
+          <p key={entry.dataKey} style={{ color: entry.color }}>
+            {entry.name}: {t("insights_value_in_days", { value: valueFormatter(entry.value) })}
+          </p>
+        )
+      )}
     </div>
   );
 };
@@ -68,8 +70,8 @@ export const AverageLeadTimeChart = () => {
       isPending={isPending}
       isError={isError}
       legend={[
-        { label: t("average_lead_time"), color: COLOR.AVERAGE },
-        { label: t("median_lead_time"), color: COLOR.MEDIAN },
+        { label: t("lead_time_average"), color: COLOR.AVERAGE },
+        { label: t("lead_time_median"), color: COLOR.MEDIAN },
       ]}>
       {isSuccess && data ? (
         data.every((item) => item.Count === 0) ? (
@@ -95,6 +97,7 @@ export const AverageLeadTimeChart = () => {
                   name={t("average_lead_time")}
                   stroke={COLOR.AVERAGE}
                   strokeWidth={2}
+                  connectNulls
                   dot={{ r: 4 }}
                   activeDot={{ r: 6 }}
                   animationDuration={1000}
@@ -105,6 +108,7 @@ export const AverageLeadTimeChart = () => {
                   name={t("median_lead_time")}
                   stroke={COLOR.MEDIAN}
                   strokeWidth={2}
+                  connectNulls
                   dot={{ r: 4 }}
                   activeDot={{ r: 6 }}
                   animationDuration={1000}

@@ -833,7 +833,7 @@ describe("InsightsBookingService Integration Tests", () => {
         ],
       });
       expect(trend).toEqual([
-        { formattedDateFull: "Earlier", Month: "Earlier", Average: 0, Median: 0, Count: 0 },
+        { formattedDateFull: "Earlier", Month: "Earlier", Average: null, Median: null, Count: 0 },
         { formattedDateFull: "Current", Month: "Current", Average: 5, Median: 4, Count: 3 },
       ]);
 

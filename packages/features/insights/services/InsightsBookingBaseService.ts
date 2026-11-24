@@ -1371,12 +1371,13 @@ export class InsightsBookingBaseService {
 
     return dateRanges.map(({ formattedDate, formattedDateFull }, index) => {
       const stats = statsByRangeIndex.get(index);
+      const count = stats ? Number(stats.bookingsCount) : 0;
       return {
         formattedDateFull,
         Month: formattedDate,
-        Average: roundToOneDecimal(stats?.averageDays),
-        Median: roundToOneDecimal(stats?.medianDays),
-        Count: stats ? Number(stats.bookingsCount) : 0,
+        Average: count > 0 ? roundToOneDecimal(stats?.averageDays) : null,
+        Median: count > 0 ? roundToOneDecimal(stats?.medianDays) : null,
+        Count: count,
       };
     });
   }
