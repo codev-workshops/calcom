@@ -1419,7 +1419,7 @@ export class InsightsBookingBaseService {
           COUNT(*) as "totalBookings",
           COUNT(*) FILTER (WHERE "noShowHost" = true) as "noShowHostBookings"
         FROM "BookingTimeStatusDenormalized"
-        WHERE ${baseConditions}
+        WHERE ${baseConditions} AND "timeStatus" = 'completed'
       ),
       guest_stats AS (
         SELECT
@@ -1427,7 +1427,7 @@ export class InsightsBookingBaseService {
           COUNT(a.id) FILTER (WHERE a."noShow" = true) as "noShowAttendees"
         FROM "Attendee" a
         INNER JOIN "BookingTimeStatusDenormalized" b ON a."bookingId" = b.id
-        WHERE ${baseConditions}
+        WHERE ${baseConditions} AND b."timeStatus" = 'completed'
       )
       SELECT
         CAST(hs."totalBookings" AS INTEGER) as "totalBookings",

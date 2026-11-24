@@ -754,15 +754,21 @@ describe("InsightsBookingService Integration Tests", () => {
       const now = Date.now();
       const day = 24 * 60 * 60 * 1000;
 
+      const pastBookingsCreatedAt = now - 20 * day;
+      const bookingTimes = [
+        ...[2, 4, 9].map((leadDays) => ({ createdAt: pastBookingsCreatedAt, leadDays })),
+        { createdAt: now - day, leadDays: 4 },
+      ];
+
       const createdBookings = await Promise.all(
-        [2, 4, 9].map((leadDays, index) =>
+        bookingTimes.map(({ createdAt, leadDays }, index) =>
           prisma.booking.create({
             data: {
               uid: `lead-time-booking-${now}-${index}-${Math.random().toString(36).substring(7)}`,
               title: "Lead Time Booking",
-              createdAt: new Date(now - day),
-              startTime: new Date(now - day + leadDays * day),
-              endTime: new Date(now - day + leadDays * day + 60 * 60 * 1000),
+              createdAt: new Date(createdAt),
+              startTime: new Date(createdAt + leadDays * day),
+              endTime: new Date(createdAt + leadDays * day + 60 * 60 * 1000),
               userId: testData.user.id,
               status: BookingStatus.ACCEPTED,
               noShowHost: index === 0,
@@ -792,7 +798,7 @@ describe("InsightsBookingService Integration Tests", () => {
               value: {
                 type: ColumnFilterType.DATE_RANGE,
                 data: {
-                  startDate: new Date(now - 3 * day).toISOString(),
+                  startDate: new Date(now - 25 * day).toISOString(),
                   endDate: new Date(now + day).toISOString(),
                   preset: "c",
                 },
@@ -803,8 +809,9 @@ describe("InsightsBookingService Integration Tests", () => {
       });
 
       const leadTime = await service.getAverageLeadTime();
-      expect(leadTime).toEqual({ bookingsCount: 3, averageDays: 5, medianDays: 4 });
+      expect(leadTime).toEqual({ bookingsCount: 4, averageDays: 4.8, medianDays: 4 });
 
+      // The upcoming booking is excluded from no-show rates
       const noShowRate = await service.getNoShowRateStats();
       expect(noShowRate).toEqual({
         totalBookings: 3,
@@ -819,13 +826,13 @@ describe("InsightsBookingService Integration Tests", () => {
         timeZone: "UTC",
         dateRanges: [
           {
-            startDate: new Date(now - 3 * day).toISOString(),
-            endDate: new Date(now - 2 * day).toISOString(),
+            startDate: new Date(now - 25 * day).toISOString(),
+            endDate: new Date(now - 21 * day).toISOString(),
             formattedDate: "Earlier",
             formattedDateFull: "Earlier",
           },
           {
-            startDate: new Date(now - day).toISOString(),
+            startDate: new Date(now - 21 * day).toISOString(),
             endDate: new Date(now + day).toISOString(),
             formattedDate: "Current",
             formattedDateFull: "Current",
@@ -834,7 +841,7 @@ describe("InsightsBookingService Integration Tests", () => {
       });
       expect(trend).toEqual([
         { formattedDateFull: "Earlier", Month: "Earlier", Average: null, Median: null, Count: 0 },
-        { formattedDateFull: "Current", Month: "Current", Average: 5, Median: 4, Count: 3 },
+        { formattedDateFull: "Current", Month: "Current", Average: 4.8, Median: 4, Count: 4 },
       ]);
 
       await prisma.attendee.deleteMany({ where: { bookingId: { in: createdBookings.map((b) => b.id) } } });
