@@ -11,8 +11,7 @@
     "post-install": "yarn build"
   },
   "dependencies": {
-    "@calcom/platform-constants": "workspace:*",
-    "@calcom/platform-types": "workspace:*"
+    "@calcom/platform-constants": "workspace:*"
   },
   "devDependencies": {
     "@types/jest": "29.5.12",
