@@ -131,8 +131,6 @@ const _loadAndValidateUsers = async ({
     users.push(withSelectedCalendars(eventTypeUser));
   }
 
-  if (!users) throw new HttpError({ statusCode: 404, message: "eventTypeUser.notFound" });
-
   // Determine if users are locked
   const containsBlockedUser = await checkIfUsersAreBlocked({
     users,
