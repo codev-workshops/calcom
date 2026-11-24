@@ -1,16 +1,12 @@
-import md5 from "md5";
-import { z } from "zod";
-
 import dayjs from "@calcom/dayjs";
 import { makeSqlCondition } from "@calcom/features/data-table/lib/server";
-import { ZColumnFilter } from "@calcom/features/data-table/lib/types";
-import { type ColumnFilter } from "@calcom/features/data-table/lib/types";
+import { type ColumnFilter, ZColumnFilter } from "@calcom/features/data-table/lib/types";
 import {
-  isSingleSelectFilterValue,
-  isMultiSelectFilterValue,
-  isTextFilterValue,
-  isNumberFilterValue,
   isDateRangeFilterValue,
+  isMultiSelectFilterValue,
+  isNumberFilterValue,
+  isSingleSelectFilterValue,
+  isTextFilterValue,
 } from "@calcom/features/data-table/lib/utils";
 import { TeamRepository } from "@calcom/features/ee/teams/repositories/TeamRepository";
 import { extractDateRangeFromColumnFilters } from "@calcom/features/insights/lib/bookingUtils";
@@ -20,12 +16,14 @@ import { PermissionCheckService } from "@calcom/features/pbac/services/permissio
 import type { PrismaClient } from "@calcom/prisma";
 import { Prisma } from "@calcom/prisma/client";
 import { MembershipRole } from "@calcom/prisma/enums";
+import md5 from "md5";
+import { z } from "zod";
 
-import { transformBookingsForCsv, type BookingTimeStatusData } from "./csvDataTransformer";
+import { type BookingTimeStatusData, transformBookingsForCsv } from "./csvDataTransformer";
 
 // Utility function to build user hash map with avatar URL fallback
 export const buildHashMapForUsers = <
-  T extends { avatarUrl: string | null; id: number; username: string | null; [key: string]: unknown }
+  T extends { avatarUrl: string | null; id: number; username: string | null; [key: string]: unknown },
 >(
   usersFromTeam: T[]
 ) => {
@@ -179,12 +177,13 @@ export class InsightsBookingBaseService {
       ORDER BY 1
     `;
 
-    const results = await this.prisma.$queryRaw<
-      Array<{
-        hour: string;
-        count: number;
-      }>
-    >(query);
+    const results =
+      await this.prisma.$queryRaw<
+        Array<{
+          hour: string;
+          count: number;
+        }>
+      >(query);
 
     // Create a map of results by hour for easy lookup
     const resultsMap = new Map(results.map((row) => [Number(row.hour), row.count]));
@@ -525,25 +524,26 @@ export class InsightsBookingBaseService {
       OFFSET ${offset}
     `;
 
-    const csvData = await this.prisma.$queryRaw<
-      Array<{
-        id: number;
-        uid: string | null;
-        title: string;
-        createdAt: Date;
-        timeStatus: string;
-        eventTypeId: number | null;
-        eventLength: number;
-        startTime: Date;
-        endTime: Date;
-        paid: boolean;
-        userEmail: string;
-        userUsername: string;
-        rating: number | null;
-        ratingFeedback: string | null;
-        noShowHost: boolean;
-      }>
-    >(csvDataQuery);
+    const csvData =
+      await this.prisma.$queryRaw<
+        Array<{
+          id: number;
+          uid: string | null;
+          title: string;
+          createdAt: Date;
+          timeStatus: string;
+          eventTypeId: number | null;
+          eventLength: number;
+          startTime: Date;
+          endTime: Date;
+          paid: boolean;
+          userEmail: string;
+          userUsername: string;
+          rating: number | null;
+          ratingFeedback: string | null;
+          noShowHost: boolean;
+        }>
+      >(csvDataQuery);
 
     if (csvData.length === 0) {
       return { data: csvData, total: totalCount };
@@ -646,15 +646,16 @@ export class InsightsBookingBaseService {
     ORDER BY bs."date"
   `;
 
-    const data = await this.prisma.$queryRaw<
-      {
-        date: Date;
-        bookingsCount: number;
-        timeStatus: string;
-        noShowHost: boolean;
-        noShowGuests: number;
-      }[]
-    >(query);
+    const data =
+      await this.prisma.$queryRaw<
+        {
+          date: Date;
+          bookingsCount: number;
+          timeStatus: string;
+          noShowHost: boolean;
+          noShowGuests: number;
+        }[]
+      >(query);
 
     // Initialize aggregate object with zero counts for all date ranges
     const aggregate: {
@@ -756,12 +757,13 @@ export class InsightsBookingBaseService {
       LIMIT 10
     `;
 
-    const bookingsFromSelected = await this.prisma.$queryRaw<
-      Array<{
-        eventTypeId: number;
-        count: number;
-      }>
-    >(query);
+    const bookingsFromSelected =
+      await this.prisma.$queryRaw<
+        Array<{
+          eventTypeId: number;
+          count: number;
+        }>
+      >(query);
 
     const eventTypeIds = bookingsFromSelected.map((booking) => booking.eventTypeId);
 
@@ -862,12 +864,13 @@ export class InsightsBookingBaseService {
       LIMIT 10
     `;
 
-    const bookingsFromTeam = await this.prisma.$queryRaw<
-      Array<{
-        userId: number;
-        count: number;
-      }>
-    >(query);
+    const bookingsFromTeam =
+      await this.prisma.$queryRaw<
+        Array<{
+          userId: number;
+          count: number;
+        }>
+      >(query);
 
     if (bookingsFromTeam.length === 0) {
       return [];
@@ -925,12 +928,13 @@ export class InsightsBookingBaseService {
       LIMIT 10
     `;
 
-    const bookingsFromTeam = await this.prisma.$queryRaw<
-      Array<{
-        userId: number;
-        count: number;
-      }>
-    >(query);
+    const bookingsFromTeam =
+      await this.prisma.$queryRaw<
+        Array<{
+          userId: number;
+          count: number;
+        }>
+      >(query);
 
     if (bookingsFromTeam.length === 0) {
       return [];
@@ -988,13 +992,14 @@ export class InsightsBookingBaseService {
       LIMIT 10
     `;
 
-    const bookingsFromTeam = await this.prisma.$queryRaw<
-      Array<{
-        userId: number | null;
-        rating: number | null;
-        ratingFeedback: string | null;
-      }>
-    >(query);
+    const bookingsFromTeam =
+      await this.prisma.$queryRaw<
+        Array<{
+          userId: number | null;
+          rating: number | null;
+          ratingFeedback: string | null;
+        }>
+      >(query);
 
     if (bookingsFromTeam.length === 0) {
       return [];
@@ -1086,19 +1091,20 @@ export class InsightsBookingBaseService {
       FROM booking_stats bs, guest_stats gs
     `;
 
-    const stats = await this.prisma.$queryRaw<
-      Array<{
-        total_bookings: bigint;
-        completed_bookings: bigint;
-        rescheduled_bookings: bigint;
-        cancelled_bookings: bigint;
-        no_show_host_bookings: bigint;
-        avg_rating: number | null;
-        total_ratings: bigint;
-        ratings_above_3: bigint;
-        no_show_guests: bigint;
-      }>
-    >(query);
+    const stats =
+      await this.prisma.$queryRaw<
+        Array<{
+          total_bookings: bigint;
+          completed_bookings: bigint;
+          rescheduled_bookings: bigint;
+          cancelled_bookings: bigint;
+          no_show_host_bookings: bigint;
+          avg_rating: number | null;
+          total_ratings: bigint;
+          ratings_above_3: bigint;
+          no_show_guests: bigint;
+        }>
+      >(query);
 
     const rawStats = stats[0];
     return rawStats
@@ -1167,15 +1173,16 @@ export class InsightsBookingBaseService {
       LIMIT 10
     `;
 
-    const recentNoShowBookings = await this.prisma.$queryRaw<
-      Array<{
-        bookingId: number;
-        startTime: Date;
-        eventTypeName: string;
-        guestName: string;
-        guestEmail: string;
-      }>
-    >(query);
+    const recentNoShowBookings =
+      await this.prisma.$queryRaw<
+        Array<{
+          bookingId: number;
+          startTime: Date;
+          eventTypeName: string;
+          guestName: string;
+          guestEmail: string;
+        }>
+      >(query);
 
     return recentNoShowBookings;
   }
@@ -1215,12 +1222,13 @@ export class InsightsBookingBaseService {
       ORDER BY 1
     `;
 
-    const data = await this.prisma.$queryRaw<
-      {
-        date: Date;
-        count: number;
-      }[]
-    >(query);
+    const data =
+      await this.prisma.$queryRaw<
+        {
+          date: Date;
+          count: number;
+        }[]
+      >(query);
 
     // Initialize aggregate object with zero counts for all date ranges
     const aggregate: { [date: string]: number } = {};
@@ -1273,13 +1281,14 @@ export class InsightsBookingBaseService {
       ORDER BY 1
     `;
 
-    const data = await this.prisma.$queryRaw<
-      {
-        date: Date;
-        ratings_above_3: number;
-        total_ratings: number;
-      }[]
-    >(query);
+    const data =
+      await this.prisma.$queryRaw<
+        {
+          date: Date;
+          ratings_above_3: number;
+          total_ratings: number;
+        }[]
+      >(query);
 
     // Initialize aggregate object with zero counts for all date ranges
     const aggregate: { [date: string]: { ratingsAbove3: number; totalRatings: number } } = {};
@@ -1337,8 +1346,15 @@ export class InsightsBookingBaseService {
     );
 
     const query = Prisma.sql`
-      WITH date_ranges AS (
+      WITH raw_date_ranges AS (
         SELECT * FROM (VALUES ${rangeValues}) AS dr("rangeIndex", "rangeStart", "rangeEnd")
+      ),
+      date_ranges AS (
+        SELECT
+          "rangeIndex",
+          "rangeStart",
+          LEAST("rangeEnd", LEAD("rangeStart") OVER (ORDER BY "rangeIndex") - 1) as "rangeEnd"
+        FROM raw_date_ranges
       ),
       lead_times AS (
         SELECT
@@ -1419,7 +1435,7 @@ export class InsightsBookingBaseService {
           COUNT(*) as "totalBookings",
           COUNT(*) FILTER (WHERE "noShowHost" = true) as "noShowHostBookings"
         FROM "BookingTimeStatusDenormalized"
-        WHERE ${baseConditions} AND "timeStatus" = 'completed'
+        WHERE ${baseConditions} AND "timeStatus" = 'completed' AND "status" = 'accepted'
       ),
       guest_stats AS (
         SELECT
@@ -1427,7 +1443,7 @@ export class InsightsBookingBaseService {
           COUNT(a.id) FILTER (WHERE a."noShow" = true) as "noShowAttendees"
         FROM "Attendee" a
         INNER JOIN "BookingTimeStatusDenormalized" b ON a."bookingId" = b.id
-        WHERE ${baseConditions} AND b."timeStatus" = 'completed'
+        WHERE ${baseConditions} AND b."timeStatus" = 'completed' AND b."status" = 'accepted'
       )
       SELECT
         CAST(hs."totalBookings" AS INTEGER) as "totalBookings",
