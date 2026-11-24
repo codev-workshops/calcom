@@ -23,7 +23,7 @@ export const KPICard = ({
 }) => {
   const { t } = useLocale();
 
-  const deltaType = calculateDeltaType(previousMetricData.deltaPrevious - previousMetricData.count);
+  const deltaType = calculateDeltaType(previousMetricData.deltaPrevious);
   const deltaValue = Number(previousMetricData.deltaPrevious).toFixed(0);
 
   const getBadgeVariant = (type: string) => {
