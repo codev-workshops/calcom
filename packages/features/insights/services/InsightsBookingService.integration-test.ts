@@ -1,10 +1,9 @@
-import { describe, expect, it } from "vitest";
-
 import { ColumnFilterType } from "@calcom/features/data-table/lib/types";
 import prisma from "@calcom/prisma";
-import type { Team, User, Membership } from "@calcom/prisma/client";
+import type { Membership, Team, User } from "@calcom/prisma/client";
 import { Prisma } from "@calcom/prisma/client";
 import { BookingStatus, MembershipRole } from "@calcom/prisma/enums";
+import { describe, expect, it } from "vitest";
 
 import {
   InsightsBookingBaseService as InsightsBookingService,
@@ -850,6 +849,26 @@ describe("InsightsBookingService Integration Tests", () => {
         { formattedDateFull: "Earlier", Month: "Earlier", Average: null, Median: null, Count: 0 },
         { formattedDateFull: "Current", Month: "Current", Average: 4.6, Median: 4, Count: 5 },
       ]);
+
+      // Ranges that share a boundary date (e.g. a week end shifted by DST) count each booking once
+      const sharedBoundaryTrend = await service.getAverageLeadTimeStats({
+        timeZone: "UTC",
+        dateRanges: [
+          {
+            startDate: new Date(now - 25 * day).toISOString(),
+            endDate: new Date(pastBookingsCreatedAt).toISOString(),
+            formattedDate: "Earlier",
+            formattedDateFull: "Earlier",
+          },
+          {
+            startDate: new Date(pastBookingsCreatedAt).toISOString(),
+            endDate: new Date(now + day).toISOString(),
+            formattedDate: "Current",
+            formattedDateFull: "Current",
+          },
+        ],
+      });
+      expect(sharedBoundaryTrend.map(({ Count }) => Count)).toEqual([0, 5]);
 
       await prisma.attendee.deleteMany({ where: { bookingId: { in: createdBookings.map((b) => b.id) } } });
       await prisma.booking.deleteMany({ where: { id: { in: createdBookings.map((b) => b.id) } } });
