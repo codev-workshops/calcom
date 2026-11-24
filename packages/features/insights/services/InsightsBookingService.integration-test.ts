@@ -809,18 +809,20 @@ describe("InsightsBookingService Integration Tests", () => {
       });
 
       const leadTime = await service.getAverageLeadTime();
-      expect(leadTime).toEqual({ bookingsCount: 4, averageDays: 4.8, medianDays: 4 });
+      expect(leadTime.bookingsCount).toBe(4);
+      expect(leadTime.averageDays).toBeCloseTo(4.75);
+      expect(leadTime.medianDays).toBeCloseTo(4);
 
       // The upcoming booking is excluded from no-show rates
       const noShowRate = await service.getNoShowRateStats();
-      expect(noShowRate).toEqual({
+      expect(noShowRate).toMatchObject({
         totalBookings: 3,
         noShowHostBookings: 1,
-        hostNoShowRate: 33.3,
         totalAttendees: 6,
         noShowAttendees: 1,
-        guestNoShowRate: 16.7,
       });
+      expect(noShowRate.hostNoShowRate).toBeCloseTo(100 / 3);
+      expect(noShowRate.guestNoShowRate).toBeCloseTo(100 / 6);
 
       const trend = await service.getAverageLeadTimeStats({
         timeZone: "UTC",

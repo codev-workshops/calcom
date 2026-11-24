@@ -184,8 +184,10 @@ export const LeadTimeAndNoShowRateKPICards = () => {
   const leadTime = leadTimeQuery.data;
   const noShowRate = noShowRateQuery.data;
 
-  const formatDays = (value: number) => t("insights_value_in_days", { value: valueFormatter(value) });
-  const formatPercentage = (value: number) => `${valueFormatter(value)}%`;
+  const roundToOneDecimal = (value: number) => Math.round(value * 10) / 10;
+  const formatDays = (value: number) =>
+    t("insights_value_in_days", { value: valueFormatter(roundToOneDecimal(value)) });
+  const formatPercentage = (value: number) => `${valueFormatter(roundToOneDecimal(value))}%`;
 
   const categories = [
     { title: t("average_lead_time"), metric: leadTime?.average, formatValue: formatDays },

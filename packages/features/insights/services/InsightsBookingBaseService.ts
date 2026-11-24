@@ -1405,8 +1405,8 @@ export class InsightsBookingBaseService {
     const stats = data[0];
     return {
       bookingsCount: stats ? Number(stats.bookingsCount) : 0,
-      averageDays: roundToOneDecimal(stats?.averageDays),
-      medianDays: roundToOneDecimal(stats?.medianDays),
+      averageDays: Number(stats?.averageDays ?? 0),
+      medianDays: Number(stats?.medianDays ?? 0),
     };
   }
 
@@ -1455,10 +1455,10 @@ export class InsightsBookingBaseService {
     return {
       totalBookings,
       noShowHostBookings,
-      hostNoShowRate: totalBookings > 0 ? roundToOneDecimal((noShowHostBookings / totalBookings) * 100) : 0,
+      hostNoShowRate: totalBookings > 0 ? (noShowHostBookings / totalBookings) * 100 : 0,
       totalAttendees,
       noShowAttendees,
-      guestNoShowRate: totalAttendees > 0 ? roundToOneDecimal((noShowAttendees / totalAttendees) * 100) : 0,
+      guestNoShowRate: totalAttendees > 0 ? (noShowAttendees / totalAttendees) * 100 : 0,
     };
   }
 
