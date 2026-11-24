@@ -1,11 +1,10 @@
 "use client";
 
+import { valueFormatter } from "@calcom/features/insights/lib/valueFormatter";
 import { useLocale } from "@calcom/lib/hooks/useLocale";
 import { trpc } from "@calcom/trpc/react";
 import classNames from "@calcom/ui/classNames";
 import { SkeletonText } from "@calcom/ui/components/skeleton";
-
-import { valueFormatter } from "@calcom/features/insights/lib/valueFormatter";
 import { useInsightsBookingParameters } from "@calcom/web/modules/insights/hooks/useInsightsBookingParameters";
 import { ChartCard } from "../ChartCard";
 import { KPICard } from "../KPICard";
@@ -190,10 +189,30 @@ export const LeadTimeAndNoShowRateKPICards = () => {
   const formatPercentage = (value: number) => `${valueFormatter(roundToOneDecimal(value))}%`;
 
   const categories = [
-    { title: t("average_lead_time"), metric: leadTime?.average, formatValue: formatDays },
-    { title: t("median_lead_time"), metric: leadTime?.median, formatValue: formatDays },
-    { title: t("host_no_show_rate"), metric: noShowRate?.host, formatValue: formatPercentage },
-    { title: t("guest_no_show_rate"), metric: noShowRate?.guest, formatValue: formatPercentage },
+    {
+      title: t("average_lead_time"),
+      metric: leadTime?.average,
+      empty: leadTime?.empty,
+      formatValue: formatDays,
+    },
+    {
+      title: t("median_lead_time"),
+      metric: leadTime?.median,
+      empty: leadTime?.empty,
+      formatValue: formatDays,
+    },
+    {
+      title: t("host_no_show_rate"),
+      metric: noShowRate?.host,
+      empty: noShowRate?.empty,
+      formatValue: formatPercentage,
+    },
+    {
+      title: t("guest_no_show_rate"),
+      metric: noShowRate?.guest,
+      empty: noShowRate?.empty,
+      formatValue: formatPercentage,
+    },
   ];
 
   if (!isPending && (!leadTime || !noShowRate)) {
@@ -210,7 +229,14 @@ export const LeadTimeAndNoShowRateKPICards = () => {
         <StatContainer>
           {categories.map((item, index) => (
             <StatItem key={item.title} index={index}>
-              {item.metric && leadTime && noShowRate ? (
+              {item.empty ? (
+                <div>
+                  <div className="text-default text-sm">{item.title}</div>
+                  <p className="text-subtle mt-2 text-sm font-light">
+                    {t("insights_no_data_found_for_filter")}
+                  </p>
+                </div>
+              ) : item.metric && leadTime && noShowRate ? (
                 <KPICard
                   title={item.title}
                   previousMetricData={item.metric}
