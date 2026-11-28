@@ -11,6 +11,7 @@ export const KPICard = ({
   title,
   previousMetricData,
   previousDateRange,
+  formatValue = valueFormatter,
 }: {
   title: string;
   previousMetricData: {
@@ -18,10 +19,11 @@ export const KPICard = ({
     deltaPrevious: number;
   };
   previousDateRange: { startDate: string; endDate: string };
+  formatValue?: (value: number) => string;
 }) => {
   const { t } = useLocale();
 
-  const deltaType = calculateDeltaType(previousMetricData.deltaPrevious - previousMetricData.count);
+  const deltaType = calculateDeltaType(previousMetricData.deltaPrevious);
   const deltaValue = Number(previousMetricData.deltaPrevious).toFixed(0);
 
   const getBadgeVariant = (type: string) => {
@@ -60,7 +62,7 @@ export const KPICard = ({
     <div>
       <div className="text-default text-sm">{title}</div>
       <div className="flex items-baseline justify-start space-x-3 truncate">
-        <div className="text-emphasis text-2xl font-semibold">{valueFormatter(previousMetricData.count)}</div>
+        <div className="text-emphasis text-2xl font-semibold">{formatValue(previousMetricData.count)}</div>
       </div>
       <div className="mt-4 flex items-center justify-start space-x-2">
         <Badge variant={badgeVariant} className="flex items-center gap-1">
